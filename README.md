@@ -1,159 +1,161 @@
 # Obsidian File Sync Plugin
 
-一個用於將 Obsidian vault 中的檔案同步到指定目錄的插件。支援所有檔案類型、檔案篩選和批次選擇功能。
+> [繁體中文](README.zh-TW.md) | English
 
-## 功能特色
+An [Obsidian](https://obsidian.md/) plugin for synchronizing selected vault files to a specified destination directory. Supports all file types, file filtering, and batch selection features.
 
-- 目的地設定：指定檔案要被複製的目標目錄（支援資料夾選擇器）
-- 檔案選擇：使用勾選框選擇需要同步的檔案
-- 手動儲存：新增「Save」按鈕，避免每次勾選都重新渲染介面
-- 記憶選擇：插件會記住已儲存的檔案選擇
-- 檔案類型篩選：可按檔案類型（.md, .png, .pdf 等）篩選
-- 智慧批次選擇：
-  - 統合切換按鈕 - 未全選時顯示「Select All」，全選後顯示「Deselect All」
-- 資料夾管理：
-  - 樹狀結構顯示 - 子資料夾顯示在父資料夾下方並自動縮排
-  - 可折疊/展開資料夾
-  - 智慧切換按鈕 - 根據當前狀態顯示「Expand」或「Collapse」
-  - 資料夾層級勾選框 - 一鍵選擇整個資料夾（含子資料夾）內的所有檔案
-  - 支援 indeterminate 狀態（部分檔案被選擇時）
-- 手動儲存：新增「Save」按鈕於畫面下方，避免每次勾選都重新渲染介面
-- 滾動位置保持：重新渲染時自動恢復滾動位置，不會跳回頂部
-- 記憶選擇：插件會記住已儲存的檔案選擇
-- 保持結構：同步時維持原有的資料夾結構
-- 支援所有檔案類型：.md, .png, .jpg, .pdf, .txt, .docx, .xlsx 等
-- 錯誤記錄：同步錯誤會記錄到插件資料夾的 `sync-errors.log` 檔案
+## Features
 
-## 安裝方式
+- **Destination configuration**: Specify the target directory where files will be copied (with folder picker support)
+- **File selection**: Use checkboxes to select files to sync
+- **Manual save**: "Save" button to avoid re-rendering the interface on every checkbox change
+- **Memory of selections**: The plugin remembers your saved file selections
+- **File type filtering**: Filter by file type (.md, .png, .pdf, etc.)
+- **Smart batch selection**:
+  - Unified toggle button - shows "Select All" when not all selected, "Deselect All" when all selected
+- **Folder management**:
+  - Tree structure display - subfolders displayed below parent folders with automatic indentation
+  - Collapsible/expandable folders
+  - Smart toggle button - shows "Expand" or "Collapse" based on current state
+  - Folder-level checkboxes - select all files in a folder (including subfolders) with one click
+  - Supports indeterminate state (when some files are selected)
+- **Scroll position preservation**: Automatically restores scroll position when re-rendering, won't jump back to top
+- **Structure preservation**: Maintains original folder structure during sync
+- **All file types supported**: .md, .png, .jpg, .pdf, .txt, .docx, .xlsx, etc.
+- **Error logging**: Sync errors are logged to `sync-errors.log` file in the plugin folder
 
-### 方法一：手動安裝（開發版）
+## Installation
 
-1. 在您的 vault 中找到 `.obsidian/plugins/` 資料夾
-2. 建立一個名為 `file-sync-plugin` 的資料夾
-3. 將以下檔案複製到該資料夾中：
+### Method 1: Manual Installation (Development Version)
+
+1. Find the `.obsidian/plugins/` folder in your vault
+2. Create a folder named `file-sync-plugin`
+3. Copy the following files to that folder:
    - `main.js`
    - `manifest.json`
    - `styles.css`
-4. 重新啟動 Obsidian
-5. 前往「設定」→「社區插件」→ 確保「安全模式」已關閉
-6. 在「已安裝插件」列表中啟用「File Sync Plugin」
+4. Restart Obsidian
+5. Go to **Settings → Community plugins** → Make sure "Safe mode" is disabled
+6. Enable "File Sync Plugin" in the "Installed plugins" list
 
-### 方法二：從原始碼編譯
+### Method 2: Build from Source
 
 ```bash
-# 進入插件目錄
+# Navigate to the plugin directory
 cd obsidian-file-sync-plugin
 
-# 安裝相依套件
+# Install dependencies
 npm install
 
-# 編譯插件
+# Build the plugin
 npm run build
 
-# 編譯後的檔案會在根目錄產生 main.js
+# The compiled main.js will be generated in the root directory
 ```
 
-## 使用方式
+Alternatively, install the plugin by downloading it from the [Release Tab](https://github.com/HXuanHui/obsidian-file-sync-plugin/releases).
 
-### 1. 設定目的地路徑
+## Usage
 
-1. 開啟「設定」→「File Sync Plugin」
-2. 在「Destination Path」輸入目標目錄路徑，或點擊「Browse」按鈕選擇資料夾
-   - 例如：`D:\文件\destination` 或 `C:\Backup\notes`
+### 1. Configure Destination Path
 
-### 2. 選擇要同步的檔案
+1. Open **Settings → File Sync Plugin**
+2. Enter the target directory path in "Destination Path", or click the "Browse" button to select a folder
+   - Examples: `D:\Documents\destination` or `C:\Backup\notes`
 
-1. 使用「File Type Filter」下拉選單篩選檔案類型
-   - 選項：All Files, .md, .png, .jpg, .pdf, .txt
-2. 資料夾操作：
-   - 檔案以樹狀結構顯示，子資料夾會縮排在父資料夾下方
-   - 點擊資料夾名稱旁的箭頭圖示（▶/▼）可折疊/展開個別資料夾
-   - 使用智慧切換按鈕快速管理所有資料夾：
-     - 當大部分資料夾展開時，顯示「Collapse」
-     - 當大部分資料夾收合時，顯示「Expand」
-   - 勾選資料夾旁的勾選框可選擇該資料夾及所有子資料夾內的檔案
-   - 資料夾勾選框支援三種狀態：
-     - 勾選：所有檔案都被選擇
-     - 未勾選：沒有檔案被選擇
-     - 半勾選（indeterminate）：部分檔案被選擇
-3. 使用勾選框選擇個別檔案
-4. 或使用智慧批次選擇按鈕：
-   - 未全選時顯示「Select All」- 選擇所有符合篩選的檔案
-   - 全選後顯示「Deselect All」- 清除所有選擇
-5. **點擊畫面下方的「Save」按鈕儲存您的選擇**
-   - 按鈕會在有未儲存變更時高亮顯示
-   - 檔案計數會顯示「(unsaved changes)」提示
-   - 重新渲染時會自動保持滾動位置，不會跳回頂部
+### 2. Select Files to Sync
 
-### 3. 執行同步
+1. Use the "File Type Filter" dropdown to filter by file type
+   - Options: All Files, .md, .png, .jpg, .pdf, .txt
+2. Folder operations:
+   - Files are displayed in a tree structure, with subfolders indented below parent folders
+   - Click the arrow icon (▶/▼) next to folder names to collapse/expand individual folders
+   - Use the smart toggle button to quickly manage all folders:
+     - Shows "Collapse" when most folders are expanded
+     - Shows "Expand" when most folders are collapsed
+   - Check the checkbox next to a folder to select all files in that folder and all subfolders
+   - Folder checkboxes support three states:
+     - Checked: All files are selected
+     - Unchecked: No files are selected
+     - Indeterminate: Some files are selected
+3. Use checkboxes to select individual files
+4. Or use the smart batch selection button:
+   - Shows "Select All" when not all files are selected - selects all files matching the filter
+   - Shows "Deselect All" when all files are selected - clears all selections
+5. **Click the "Save" button at the bottom of the screen to save your selections**
+   - The button will be highlighted when there are unsaved changes
+   - File count will show "(unsaved changes)" indicator
+   - Scroll position will be automatically preserved when re-rendering, won't jump back to top
 
-點擊左側邊欄的 Sync 圖示即可執行同步。
+### 3. Execute Sync
 
-插件會：
-- 驗證目的地路徑是否存在
-- 複製已儲存選擇的檔案到目的地
-- 維持原有的資料夾結構
-- 顯示同步進度和結果通知
-- 如有錯誤，記錄到 `sync-errors.log` 檔案
+Click the Sync icon in the left sidebar to execute the sync.
 
-## 錯誤記錄
+The plugin will:
+- Verify that the destination path exists
+- Copy the saved selected files to the destination
+- Maintain the original folder structure
+- Display sync progress and result notifications
+- Log any errors to the `sync-errors.log` file
 
-同步過程中的錯誤會記錄在插件資料夾的 `sync-errors.log` 檔案中，位置為：
+## Error Logging
+
+Errors during the sync process are logged to the `sync-errors.log` file in the plugin folder, located at:
 ```
-<你的 vault>/.obsidian/plugins/file-sync-plugin/sync-errors.log
+<your vault>/.obsidian/plugins/file-sync-plugin/sync-errors.log
 ```
 
-每次同步會附加時間戳記和錯誤詳情。
+Each sync appends a timestamp and error details.
 
-## 注意事項
+## Notes
 
-- 此插件僅支援桌面版 Obsidian（需要檔案系統存取權限）
-- 請確保目的地路徑有足夠的儲存空間
-- 同步會覆蓋目的地的同名檔案
-- 支援包含中文字元的檔案名稱和路徑
-- 記得點擊「Save」按鈕儲存檔案選擇，否則不會執行同步
+- This plugin only supports desktop Obsidian (requires file system access)
+- Ensure the destination path has sufficient storage space
+- Sync will overwrite files with the same name at the destination
+- Supports file names and paths containing Chinese characters
+- Remember to click the "Save" button to save file selections, otherwise sync won't execute
 
-## 技術細節
+## Technical Details
 
-- **開發語言**：TypeScript
-- **建置工具**：esbuild
-- **最低 Obsidian 版本**：0.15.0
-- **作者**：HXuanHui
+- **Development Language**: TypeScript
+- **Build Tool**: esbuild
+- **Minimum Obsidian Version**: 0.15.0
+- **Author**: HXuanHui
 
-## 開發
+## Development
 
 ```bash
-# 開發模式（自動重新編譯）
+# Development mode (auto recompile)
 npm run dev
 
-# 建置生產版本
+# Build production version
 npm run build
 
-# Lint 檢查
+# Lint check
 npm run lint
 ```
 
-## 授權
+## License
 
-此插件基於 Obsidian Sample Plugin 開發。
+This plugin is based on the Obsidian Sample Plugin.
 
-## 問題回報
+## Reporting Issues
 
-如有問題或建議，請在 GitHub 建立 Issue。
+If you encounter any issues or have suggestions, please create an Issue on GitHub.
 
-## 截圖
+## Screenshots
 
-（未來可新增設定介面截圖）
+(Screenshots of the settings interface can be added in the future)
 
-## 更新日誌
+## Changelog
 
 ### v1.0.0
-- 初始版本發布
-- 支援檔案篩選和批次選擇
-- 樹狀結構顯示資料夾層級
-- 可折疊資料夾與資料夾層級勾選（含子資料夾）
-- 智慧切換按鈕（Select All/Deselect All、Expand/Collapse）
-- Save 按鈕位於畫面下方
-- 手動儲存模式避免介面閃爍
-- 滾動位置保持功能
-- 錯誤記錄功能
+- Initial release
+- File filtering and batch selection support
+- Tree structure display for folder hierarchy
+- Collapsible folders with folder-level selection (including subfolders)
+- Smart toggle buttons (Select All/Deselect All, Expand/Collapse)
+- Save button at the bottom of the screen
+- Manual save mode to avoid interface flickering
+- Scroll position preservation feature
+- Error logging feature
