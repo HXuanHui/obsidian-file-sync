@@ -19,6 +19,8 @@ export class FileSyncSettingTab extends PluginSettingTab {
 	plugin: FileSyncPlugin;
 	private tempSelectedFiles: string[];
 	private hasUnsavedChanges: boolean = false;
+	private scrollPosition: number = 0;
+	private fileListContainer: HTMLElement | null = null;
 
 	constructor(app: App, plugin: FileSyncPlugin) {
 		super(app, plugin);
@@ -28,6 +30,11 @@ export class FileSyncSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
+
+		// Save scroll position before clearing
+		if (this.fileListContainer) {
+			this.scrollPosition = this.fileListContainer.scrollTop;
+		}
 
 		containerEl.empty();
 		containerEl.createEl('h2', { text: 'File Sync Plugin Settings' });
@@ -82,75 +89,68 @@ export class FileSyncSettingTab extends PluginSettingTab {
 				});
 		});
 
-		// Batch selection buttons and Save button
+		// Batch selection and folder management buttons
 		const buttonContainer = containerEl.createDiv({ cls: 'file-sync-button-container' });
 		buttonContainer.style.marginBottom = '10px';
 		buttonContainer.style.display = 'flex';
 		buttonContainer.style.gap = '10px';
 		buttonContainer.style.flexWrap = 'wrap';
 
-		const selectAllBtn = buttonContainer.createEl('button', { text: 'Select All (Current Filter)' });
-		selectAllBtn.addEventListener('click', () => {
-			const files = this.getFilteredFiles();
-			this.tempSelectedFiles = files.map(f => f.path);
-			this.hasUnsavedChanges = true;
-			this.display();
+		// Smart toggle button for Select All / Deselect All
+		const files = this.getFilteredFiles();
+		const allFilePaths = files.map(f => f.path);
+		const allSelected = allFilePaths.length > 0 && allFilePaths.every(path => this.tempSelectedFiles.includes(path));
+
+		const selectToggleBtn = buttonContainer.createEl('button', {
+			text: allSelected ? 'Deselect All' : 'Select All'
 		});
-
-		const deselectAllBtn = buttonContainer.createEl('button', { text: 'Deselect All' });
-		deselectAllBtn.addEventListener('click', () => {
-			this.tempSelectedFiles = [];
-			this.hasUnsavedChanges = true;
-			this.display();
-		});
-
-		// Save button (highlighted if there are unsaved changes)
-		const saveBtn = buttonContainer.createEl('button', { text: 'Save Selection' });
-		if (this.hasUnsavedChanges) {
-			saveBtn.style.backgroundColor = 'var(--interactive-accent)';
-			saveBtn.style.color = 'var(--text-on-accent)';
-			saveBtn.style.fontWeight = 'bold';
-		}
-		saveBtn.addEventListener('click', async () => {
-			this.plugin.settings.selectedFiles = [...this.tempSelectedFiles];
-			await this.plugin.saveSettings();
-			this.hasUnsavedChanges = false;
-			new Notice('File selection saved');
-			this.display();
-		});
-
-		// Folder expand/collapse buttons
-		const folderButtonContainer = containerEl.createDiv({ cls: 'file-sync-folder-buttons' });
-		folderButtonContainer.style.marginBottom = '10px';
-		folderButtonContainer.style.display = 'flex';
-		folderButtonContainer.style.gap = '10px';
-
-		const expandAllBtn = folderButtonContainer.createEl('button', { text: 'Expand All Folders' });
-		expandAllBtn.addEventListener('click', async () => {
-			this.plugin.settings.collapsedFolders = [];
-			await this.plugin.saveSettings();
-			this.display();
-		});
-
-		const collapseAllBtn = folderButtonContainer.createEl('button', { text: 'Collapse All Folders' });
-		collapseAllBtn.addEventListener('click', async () => {
-			// Get all folder paths
-			const files = this.getFilteredFiles();
-			const folderPaths = new Set<string>();
-			for (const file of files) {
-				const folderPath = file.parent?.path;
-				if (folderPath && folderPath !== '/') {
-					folderPaths.add(folderPath);
+		selectToggleBtn.addEventListener('click', () => {
+			if (allSelected) {
+				// Deselect all filtered files
+				this.tempSelectedFiles = this.tempSelectedFiles.filter(
+					path => !allFilePaths.includes(path)
+				);
+			} else {
+				// Select all filtered files
+				for (const filePath of allFilePaths) {
+					if (!this.tempSelectedFiles.includes(filePath)) {
+						this.tempSelectedFiles.push(filePath);
+					}
 				}
 			}
-			this.plugin.settings.collapsedFolders = Array.from(folderPaths);
+			this.hasUnsavedChanges = true;
+			this.display();
+		});
+
+		// Folder toggle button (unified expand/collapse)
+		const allFolderPaths = new Set<string>();
+		for (const file of files) {
+			const folderPath = file.parent?.path;
+			if (folderPath && folderPath !== '/') {
+				allFolderPaths.add(folderPath);
+			}
+		}
+
+		const totalFolders = allFolderPaths.size;
+		const collapsedCount = this.plugin.settings.collapsedFolders.length;
+		const isCurrentlyCollapsed = collapsedCount > totalFolders / 2;
+
+		const toggleFoldersBtn = buttonContainer.createEl('button', {
+			text: isCurrentlyCollapsed ? 'Expand' : 'Collapse'
+		});
+		toggleFoldersBtn.addEventListener('click', async () => {
+			if (isCurrentlyCollapsed) {
+				// Expand all
+				this.plugin.settings.collapsedFolders = [];
+			} else {
+				// Collapse all
+				this.plugin.settings.collapsedFolders = Array.from(allFolderPaths);
+			}
 			await this.plugin.saveSettings();
 			this.display();
 		});
 
-
 		// File count display
-		const files = this.getFilteredFiles();
 		const selectedCount = this.tempSelectedFiles.length;
 		const totalCount = files.length;
 		const statusText = this.hasUnsavedChanges
@@ -167,21 +167,51 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		}
 
 		// File tree with checkboxes
-		const fileListContainer = containerEl.createDiv({ cls: 'file-sync-file-list' });
-		fileListContainer.style.maxHeight = '400px';
-		fileListContainer.style.overflowY = 'auto';
-		fileListContainer.style.border = '1px solid var(--background-modifier-border)';
-		fileListContainer.style.padding = '10px';
-		fileListContainer.style.borderRadius = '4px';
+		this.fileListContainer = containerEl.createDiv({ cls: 'file-sync-file-list' });
+		this.fileListContainer.style.maxHeight = '400px';
+		this.fileListContainer.style.overflowY = 'auto';
+		this.fileListContainer.style.border = '1px solid var(--background-modifier-border)';
+		this.fileListContainer.style.padding = '10px';
+		this.fileListContainer.style.borderRadius = '4px';
+		this.fileListContainer.style.marginBottom = '10px';
 
 		if (files.length === 0) {
-			fileListContainer.createEl('p', {
+			this.fileListContainer.createEl('p', {
 				text: 'No files found matching the filter.',
 				cls: 'file-sync-empty'
 			});
 		} else {
-			this.renderFileTree(fileListContainer, files);
+			this.renderFileTree(this.fileListContainer, files);
 		}
+
+		// Restore scroll position after rendering
+		if (this.scrollPosition > 0) {
+			this.fileListContainer.scrollTop = this.scrollPosition;
+		}
+
+		// Save button at the bottom
+		const saveButtonContainer = containerEl.createDiv({ cls: 'file-sync-save-container' });
+		saveButtonContainer.style.display = 'flex';
+		saveButtonContainer.style.justifyContent = 'center';
+		saveButtonContainer.style.marginTop = '10px';
+
+		const saveBtn = saveButtonContainer.createEl('button', { text: 'Save' });
+		saveBtn.style.padding = '10px 20px';
+		saveBtn.style.fontSize = '14px';
+
+		if (this.hasUnsavedChanges) {
+			saveBtn.style.backgroundColor = 'var(--interactive-accent)';
+			saveBtn.style.color = 'var(--text-on-accent)';
+			saveBtn.style.fontWeight = 'bold';
+		}
+
+		saveBtn.addEventListener('click', async () => {
+			this.plugin.settings.selectedFiles = [...this.tempSelectedFiles];
+			await this.plugin.saveSettings();
+			this.hasUnsavedChanges = false;
+			new Notice('File selection saved');
+			this.display();
+		});
 	}
 
 	getFilteredFiles(): TFile[] {
@@ -196,126 +226,194 @@ export class FileSyncSettingTab extends PluginSettingTab {
 	}
 
 	renderFileTree(container: HTMLElement, files: TFile[]): void {
-		// Group files by folder
-		const filesByFolder = new Map<string, TFile[]>();
+		// Build folder hierarchy
+		const folderHierarchy = this.buildFolderHierarchy(files);
 
+		// Render the tree
+		this.renderFolderNode(container, folderHierarchy, 0);
+	}
+
+	buildFolderHierarchy(files: TFile[]): FolderNode {
+		const root: FolderNode = {
+			path: '/',
+			name: '/',
+			children: new Map(),
+			files: []
+		};
+
+		// Group files by folder
 		for (const file of files) {
 			const folderPath = file.parent?.path || '/';
-			if (!filesByFolder.has(folderPath)) {
-				filesByFolder.set(folderPath, []);
+			const parts = folderPath === '/' ? [] : folderPath.split('/');
+
+			let currentNode = root;
+			let currentPath = '';
+
+			// Build folder hierarchy
+			for (const part of parts) {
+				currentPath = currentPath === '' ? part : `${currentPath}/${part}`;
+
+				if (!currentNode.children.has(currentPath)) {
+					currentNode.children.set(currentPath, {
+						path: currentPath,
+						name: part,
+						children: new Map(),
+						files: []
+					});
+				}
+				currentNode = currentNode.children.get(currentPath)!;
 			}
-			filesByFolder.get(folderPath)!.push(file);
+
+			// Add file to the appropriate folder node
+			currentNode.files.push(file);
 		}
 
-		// Sort folders
-		const sortedFolders = Array.from(filesByFolder.keys()).sort();
+		return root;
+	}
 
-		for (const folderPath of sortedFolders) {
-			const folderFiles = filesByFolder.get(folderPath)!.sort((a, b) => a.name.localeCompare(b.name));
+	renderFolderNode(container: HTMLElement, node: FolderNode, depth: number): void {
+		// Sort folders alphabetically
+		const sortedFolders = Array.from(node.children.values()).sort((a, b) =>
+			a.name.localeCompare(b.name)
+		);
 
-			// Create folder header if not root
-			if (folderPath !== '/') {
-				const folderHeader = container.createEl('div', { cls: 'file-sync-folder-header' });
-				folderHeader.style.fontWeight = 'bold';
-				folderHeader.style.marginTop = '8px';
-				folderHeader.style.marginBottom = '4px';
-				folderHeader.style.color = 'var(--text-muted)';
-				folderHeader.style.cursor = 'pointer';
-				folderHeader.style.display = 'flex';
-				folderHeader.style.alignItems = 'center';
-				folderHeader.style.gap = '8px';
+		// Render child folders
+		for (const childNode of sortedFolders) {
+			const isCollapsed = this.plugin.settings.collapsedFolders.includes(childNode.path);
 
-				const isCollapsed = this.plugin.settings.collapsedFolders.includes(folderPath);
+			// Folder header
+			const folderHeader = container.createEl('div', { cls: 'file-sync-folder-header' });
+			folderHeader.style.fontWeight = 'bold';
+			folderHeader.style.marginTop = '4px';
+			folderHeader.style.marginBottom = '4px';
+			folderHeader.style.color = 'var(--text-muted)';
+			folderHeader.style.cursor = 'pointer';
+			folderHeader.style.display = 'flex';
+			folderHeader.style.alignItems = 'center';
+			folderHeader.style.gap = '8px';
+			folderHeader.style.paddingLeft = `${depth * 20}px`; // Indentation based on depth
 
-				// Collapse/expand icon
-				const icon = folderHeader.createEl('span', {
-					text: isCollapsed ? '▶' : '▼',
-					cls: 'file-sync-collapse-icon'
-				});
-				icon.style.fontSize = '10px';
+			// Collapse/expand icon
+			const icon = folderHeader.createEl('span', {
+				text: isCollapsed ? '▶' : '▼',
+				cls: 'file-sync-collapse-icon'
+			});
+			icon.style.fontSize = '10px';
 
-				// Folder checkbox for selecting all files in folder
-				const folderCheckbox = folderHeader.createEl('input', { type: 'checkbox' });
-				const allFilesInFolder = folderFiles.map(f => f.path);
-				const selectedFilesInFolder = allFilesInFolder.filter(path =>
-					this.tempSelectedFiles.includes(path)
-				);
-				folderCheckbox.checked = selectedFilesInFolder.length === allFilesInFolder.length && allFilesInFolder.length > 0;
-				folderCheckbox.indeterminate = selectedFilesInFolder.length > 0 && selectedFilesInFolder.length < allFilesInFolder.length;
+			// Get all files in this folder and subfolders
+			const allFilesInFolder = this.getAllFilesInNode(childNode);
+			const allFilePaths = allFilesInFolder.map(f => f.path);
+			const selectedFilesInFolder = allFilePaths.filter(path =>
+				this.tempSelectedFiles.includes(path)
+			);
 
-				folderCheckbox.addEventListener('click', (e) => {
-					e.stopPropagation(); // Prevent folder collapse/expand
-					if (folderCheckbox.checked) {
-						// Select all files in folder
-						for (const filePath of allFilesInFolder) {
-							if (!this.tempSelectedFiles.includes(filePath)) {
-								this.tempSelectedFiles.push(filePath);
-							}
+			// Folder checkbox
+			const folderCheckbox = folderHeader.createEl('input', { type: 'checkbox' });
+			folderCheckbox.checked = selectedFilesInFolder.length === allFilePaths.length && allFilePaths.length > 0;
+			folderCheckbox.indeterminate = selectedFilesInFolder.length > 0 && selectedFilesInFolder.length < allFilePaths.length;
+
+			folderCheckbox.addEventListener('click', (e) => {
+				e.stopPropagation();
+				if (folderCheckbox.checked) {
+					// Select all files in folder
+					for (const filePath of allFilePaths) {
+						if (!this.tempSelectedFiles.includes(filePath)) {
+							this.tempSelectedFiles.push(filePath);
 						}
-					} else {
-						// Deselect all files in folder
-						this.tempSelectedFiles = this.tempSelectedFiles.filter(
-							path => !allFilesInFolder.includes(path)
-						);
 					}
-					this.hasUnsavedChanges = true;
-					this.display();
-				});
-
-				// Folder name
-				const folderName = folderHeader.createEl('span', { text: folderPath });
-
-				// Toggle collapse on folder header click
-				folderHeader.addEventListener('click', async (e) => {
-					if (e.target !== folderCheckbox) {
-						if (isCollapsed) {
-							this.plugin.settings.collapsedFolders = this.plugin.settings.collapsedFolders.filter(
-								f => f !== folderPath
-							);
-						} else {
-							this.plugin.settings.collapsedFolders.push(folderPath);
-						}
-						await this.plugin.saveSettings();
-						this.display();
-					}
-				});
-
-				// Skip rendering files if folder is collapsed
-				if (isCollapsed) {
-					continue;
+				} else {
+					// Deselect all files in folder
+					this.tempSelectedFiles = this.tempSelectedFiles.filter(
+						path => !allFilePaths.includes(path)
+					);
 				}
-			}
+				this.hasUnsavedChanges = true;
+				this.display();
+			});
 
-			// Create file checkboxes
-			for (const file of folderFiles) {
-				const fileItem = container.createEl('div', { cls: 'file-sync-file-item' });
-				fileItem.style.display = 'flex';
-				fileItem.style.alignItems = 'center';
-				fileItem.style.padding = '2px 0 2px 20px';
+			// Folder name
+			const folderName = folderHeader.createEl('span', { text: childNode.name });
 
-				const checkbox = fileItem.createEl('input', { type: 'checkbox' });
-				checkbox.checked = this.tempSelectedFiles.includes(file.path);
-				checkbox.style.marginRight = '8px';
-				checkbox.addEventListener('change', () => {
-					if (checkbox.checked) {
-						if (!this.tempSelectedFiles.includes(file.path)) {
-							this.tempSelectedFiles.push(file.path);
-						}
-					} else {
-						this.tempSelectedFiles = this.tempSelectedFiles.filter(
-							path => path !== file.path
+			// Toggle collapse on folder header click
+			folderHeader.addEventListener('click', async (e) => {
+				if (e.target !== folderCheckbox) {
+					if (isCollapsed) {
+						this.plugin.settings.collapsedFolders = this.plugin.settings.collapsedFolders.filter(
+							f => f !== childNode.path
 						);
+					} else {
+						this.plugin.settings.collapsedFolders.push(childNode.path);
 					}
-					this.hasUnsavedChanges = true;
+					await this.plugin.saveSettings();
 					this.display();
-				});
+				}
+			});
 
-				const label = fileItem.createEl('label', { text: file.name });
-				label.style.cursor = 'pointer';
-				label.addEventListener('click', () => {
-					checkbox.click();
-				});
+			// If not collapsed, render contents
+			if (!isCollapsed) {
+				// Render files in this folder (sorted)
+				const sortedFiles = childNode.files.sort((a, b) => a.name.localeCompare(b.name));
+				for (const file of sortedFiles) {
+					this.renderFileItem(container, file, depth + 1);
+				}
+
+				// Recursively render child folders
+				this.renderFolderNode(container, childNode, depth + 1);
+			}
+		}
+
+		// Render files in the current node (root level files)
+		if (depth === 0) {
+			const sortedFiles = node.files.sort((a, b) => a.name.localeCompare(b.name));
+			for (const file of sortedFiles) {
+				this.renderFileItem(container, file, depth);
 			}
 		}
 	}
+
+	renderFileItem(container: HTMLElement, file: TFile, depth: number): void {
+		const fileItem = container.createEl('div', { cls: 'file-sync-file-item' });
+		fileItem.style.display = 'flex';
+		fileItem.style.alignItems = 'center';
+		fileItem.style.padding = '2px 0';
+		fileItem.style.paddingLeft = `${depth * 20 + 20}px`; // Extra indent for files
+
+		const checkbox = fileItem.createEl('input', { type: 'checkbox' });
+		checkbox.checked = this.tempSelectedFiles.includes(file.path);
+		checkbox.style.marginRight = '8px';
+		checkbox.addEventListener('change', () => {
+			if (checkbox.checked) {
+				if (!this.tempSelectedFiles.includes(file.path)) {
+					this.tempSelectedFiles.push(file.path);
+				}
+			} else {
+				this.tempSelectedFiles = this.tempSelectedFiles.filter(
+					path => path !== file.path
+				);
+			}
+			this.hasUnsavedChanges = true;
+			this.display();
+		});
+
+		const label = fileItem.createEl('label', { text: file.name });
+		label.style.cursor = 'pointer';
+		label.addEventListener('click', () => {
+			checkbox.click();
+		});
+	}
+
+	getAllFilesInNode(node: FolderNode): TFile[] {
+		let files = [...node.files];
+		for (const child of node.children.values()) {
+			files = files.concat(this.getAllFilesInNode(child));
+		}
+		return files;
+	}
+}
+
+interface FolderNode {
+	path: string;
+	name: string;
+	children: Map<string, FolderNode>;
+	files: TFile[];
 }
