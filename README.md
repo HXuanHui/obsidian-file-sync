@@ -1,0 +1,152 @@
+# Obsidian File Sync Plugin
+
+一個用於將 Obsidian vault 中的檔案同步到指定目錄的插件。支援所有檔案類型、檔案篩選和批次選擇功能。
+
+## 功能特色
+
+- 目的地設定：指定檔案要被複製的目標目錄（支援資料夾選擇器）
+- 檔案選擇：使用勾選框選擇需要同步的檔案
+- 手動儲存：新增「Save Selection」按鈕，避免每次勾選都重新渲染介面
+- 記憶選擇：插件會記住已儲存的檔案選擇
+- 檔案類型篩選：可按檔案類型（.md, .png, .pdf 等）篩選
+- 批次選擇：
+  - 「全選（當前篩選）」- 一鍵選擇符合篩選條件的所有檔案
+  - 「全部取消」- 清除所有選擇
+- 資料夾管理：
+  - 可折疊/展開資料夾
+  - 「Expand All Folders」- 一鍵展開所有資料夾
+  - 「Collapse All Folders」- 一鍵收合所有資料夾
+  - 資料夾層級勾選框 - 一鍵選擇整個資料夾內的所有檔案
+  - 支援 indeterminate 狀態（部分檔案被選擇時）
+- 一鍵同步：點擊側邊欄圖示按鈕執行同步
+- 保持結構：同步時維持原有的資料夾結構
+- 支援所有檔案類型：.md, .png, .jpg, .pdf, .txt, .docx, .xlsx 等
+- 錯誤記錄：同步錯誤會記錄到插件資料夾的 `sync-errors.log` 檔案
+
+## 安裝方式
+
+### 方法一：手動安裝（開發版）
+
+1. 在您的 vault 中找到 `.obsidian/plugins/` 資料夾
+2. 建立一個名為 `file-sync-plugin` 的資料夾
+3. 將以下檔案複製到該資料夾中：
+   - `main.js`
+   - `manifest.json`
+   - `styles.css`
+4. 重新啟動 Obsidian
+5. 前往「設定」→「社區插件」→ 確保「安全模式」已關閉
+6. 在「已安裝插件」列表中啟用「File Sync Plugin」
+
+### 方法二：從原始碼編譯
+
+```bash
+# 進入插件目錄
+cd obsidian-file-sync-plugin
+
+# 安裝相依套件
+npm install
+
+# 編譯插件
+npm run build
+
+# 編譯後的檔案會在根目錄產生 main.js
+```
+
+## 使用方式
+
+### 1. 設定目的地路徑
+
+1. 開啟「設定」→「File Sync Plugin」
+2. 在「Destination Path」輸入目標目錄路徑，或點擊「Browse」按鈕選擇資料夾
+   - 例如：`D:\文件\destination` 或 `C:\Backup\notes`
+
+### 2. 選擇要同步的檔案
+
+1. 使用「File Type Filter」下拉選單篩選檔案類型
+   - 選項：All Files, .md, .png, .jpg, .pdf, .txt
+2. 資料夾操作：
+   - 點擊資料夾名稱旁的箭頭圖示（▶/▼）可折疊/展開資料夾
+   - 使用「Expand All Folders」按鈕一鍵展開所有資料夾
+   - 使用「Collapse All Folders」按鈕一鍵收合所有資料夾
+   - 勾選資料夾旁的勾選框可選擇該資料夾下的所有檔案
+   - 資料夾勾選框支援三種狀態：
+     - 勾選：所有檔案都被選擇
+     - 未勾選：沒有檔案被選擇
+     - 半勾選（indeterminate）：部分檔案被選擇
+3. 使用勾選框選擇個別檔案
+4. 或使用批次選擇按鈕：
+   - 點擊「Select All (Current Filter)」選擇所有符合篩選的檔案
+   - 點擊「Deselect All」清除所有選擇
+5. **點擊「Save Selection」按鈕儲存您的選擇**
+   - 按鈕會在有未儲存變更時高亮顯示
+   - 檔案計數會顯示「(unsaved changes)」提示
+
+### 3. 執行同步
+
+點擊左側邊欄的 Sync 圖示即可執行同步。
+
+插件會：
+- 驗證目的地路徑是否存在
+- 複製已儲存選擇的檔案到目的地
+- 維持原有的資料夾結構
+- 顯示同步進度和結果通知
+- 如有錯誤，記錄到 `sync-errors.log` 檔案
+
+## 錯誤記錄
+
+同步過程中的錯誤會記錄在插件資料夾的 `sync-errors.log` 檔案中，位置為：
+```
+<你的 vault>/.obsidian/plugins/file-sync-plugin/sync-errors.log
+```
+
+每次同步會附加時間戳記和錯誤詳情。
+
+## 注意事項
+
+- 此插件僅支援桌面版 Obsidian（需要檔案系統存取權限）
+- 請確保目的地路徑有足夠的儲存空間
+- 同步會覆蓋目的地的同名檔案
+- 支援包含中文字元的檔案名稱和路徑
+- 記得點擊「Save Selection」按鈕儲存檔案選擇，否則不會執行同步
+
+## 技術細節
+
+- **開發語言**：TypeScript
+- **建置工具**：esbuild
+- **最低 Obsidian 版本**：0.15.0
+- **作者**：HXuanHui
+
+## 開發
+
+```bash
+# 開發模式（自動重新編譯）
+npm run dev
+
+# 建置生產版本
+npm run build
+
+# Lint 檢查
+npm run lint
+```
+
+## 授權
+
+此插件基於 Obsidian Sample Plugin 開發。
+
+## 問題回報
+
+如有問題或建議，請在 GitHub 建立 Issue。
+
+## 截圖
+
+（未來可新增設定介面截圖）
+
+## 更新日誌
+
+### v1.0.0
+- 初始版本發布
+- 支援檔案篩選和批次選擇
+- 可折疊資料夾與資料夾層級勾選
+- 全部展開/收合資料夾功能
+- 手動儲存模式避免介面閃爍
+- 錯誤記錄功能
