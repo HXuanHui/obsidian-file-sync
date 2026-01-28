@@ -145,7 +145,7 @@ If you encounter any issues or have suggestions, please create an Issue on GitHu
 
 ## Screenshots
 
-(Screenshots of the settings interface can be added in the future)
+![alt text](assets/interface.png)
 
 ## Changelog
 

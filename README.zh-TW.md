@@ -147,7 +147,7 @@ npm run lint
 
 ## 截圖
 
-（未來可新增設定介面截圖）
+![alt text](assets/interface.png)
 
 ## 更新日誌
 
