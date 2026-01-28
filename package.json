@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-file-sync-plugin",
+	"name": "file-sync",
 	"version": "1.0.0",
 	"description": "A plugin to synchronize selected vault files to a specified destination directory",
 	"main": "main.js",

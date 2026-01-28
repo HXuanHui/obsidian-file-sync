@@ -14,7 +14,7 @@ export default class FileSyncPlugin extends Plugin {
 		this.logFilePath = path.join(this.manifest.dir || '', 'sync-errors.log');
 
 		// Add ribbon icon for one-click sync
-		this.addRibbonIcon('sync', 'Sync Files to Destination', async (evt: MouseEvent) => {
+		this.addRibbonIcon('sync', 'Sync files to destination', async (evt: MouseEvent) => {
 			await this.syncFiles();
 		});
 

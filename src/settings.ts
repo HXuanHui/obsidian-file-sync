@@ -37,11 +37,11 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		}
 
 		containerEl.empty();
-		containerEl.createEl('h2', { text: 'File Sync Plugin Settings' });
+		containerEl.createEl('h2', { text: 'File sync settings' });
 
 		// Destination path setting with folder picker
 		const destSetting = new Setting(containerEl)
-			.setName('Destination Path')
+			.setName('Destination path')
 			.setDesc('Specify the directory where files will be copied');
 
 		destSetting.addText(text => text
@@ -70,17 +70,17 @@ export class FileSyncSettingTab extends PluginSettingTab {
 
 		// File type filter
 		const filterSetting = new Setting(containerEl)
-			.setName('File Type Filter')
+			.setName('File type filter')
 			.setDesc('Filter files by extension');
 
 		filterSetting.addDropdown(dropdown => {
 			dropdown
-				.addOption('all', 'All Files')
+				.addOption('all', 'All files')
 				.addOption('.md', 'Markdown (.md)')
-				.addOption('.png', 'PNG Images (.png)')
-				.addOption('.jpg', 'JPEG Images (.jpg)')
-				.addOption('.pdf', 'PDF Documents (.pdf)')
-				.addOption('.txt', 'Text Files (.txt)')
+				.addOption('.png', 'PNG images (.png)')
+				.addOption('.jpg', 'JPEG images (.jpg)')
+				.addOption('.pdf', 'PDF documents (.pdf)')
+				.addOption('.txt', 'Text files (.txt)')
 				.setValue(this.plugin.settings.fileTypeFilter)
 				.onChange(async (value) => {
 					this.plugin.settings.fileTypeFilter = value;
@@ -102,7 +102,7 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		const allSelected = allFilePaths.length > 0 && allFilePaths.every(path => this.tempSelectedFiles.includes(path));
 
 		const selectToggleBtn = buttonContainer.createEl('button', {
-			text: allSelected ? 'Deselect All' : 'Select All'
+			text: allSelected ? 'Deselect all' : 'Select all'
 		});
 		selectToggleBtn.addEventListener('click', () => {
 			if (allSelected) {
