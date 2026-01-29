@@ -1,8 +1,85 @@
 /*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
+File Sync Plugin Styles
 */
+
+/* Button container */
+.file-sync-button-container {
+	margin-bottom: 10px;
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+/* File count status */
+.file-sync-count {
+	margin-bottom: 10px;
+}
+
+.file-sync-count.unsaved {
+	color: var(--text-warning);
+	font-weight: bold;
+}
+
+/* File list container */
+.file-sync-file-list {
+	max-height: 400px;
+	overflow-y: auto;
+	border: 1px solid var(--background-modifier-border);
+	padding: 10px;
+	border-radius: 4px;
+	margin-bottom: 10px;
+}
+
+/* Empty state */
+.file-sync-empty {
+	color: var(--text-muted);
+}
+
+/* Save button container */
+.file-sync-save-container {
+	display: flex;
+	justify-content: center;
+	margin-top: 10px;
+}
+
+.file-sync-save-container button {
+	padding: 10px 20px;
+	font-size: 14px;
+}
+
+.file-sync-save-container button.unsaved {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-weight: bold;
+}
+
+/* Folder header */
+.file-sync-folder-header {
+	font-weight: bold;
+	margin-top: 4px;
+	margin-bottom: 4px;
+	color: var(--text-muted);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.file-sync-collapse-icon {
+	font-size: 10px;
+}
+
+/* File item */
+.file-sync-file-item {
+	display: flex;
+	align-items: center;
+	padding: 2px 0;
+}
+
+.file-sync-file-item input[type="checkbox"] {
+	margin-right: 8px;
+}
+
+.file-sync-file-item label {
+	cursor: pointer;
+}

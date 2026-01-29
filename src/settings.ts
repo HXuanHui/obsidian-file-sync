@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, TFolder } from "obsidian";
+import { App, PluginSettingTab, Setting, TFile, Notice } from "obsidian";
 import FileSyncPlugin from "./main";
 
 export interface FileSyncSettings {
@@ -37,36 +37,22 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		}
 
 		containerEl.empty();
-		containerEl.createEl('h2', { text: 'File sync settings' });
+		
+		new Setting(containerEl)
+			.setName('Synchronization')
+			.setHeading();
 
-		// Destination path setting with folder picker
-		const destSetting = new Setting(containerEl)
+		// Destination path setting
+		new Setting(containerEl)
 			.setName('Destination path')
-			.setDesc('Specify the directory where files will be copied');
-
-		destSetting.addText(text => text
-			.setPlaceholder('D:\\destination')
-			.setValue(this.plugin.settings.destinationPath)
-			.onChange(async (value) => {
-				this.plugin.settings.destinationPath = value;
-				await this.plugin.saveSettings();
-			}));
-
-		destSetting.addButton(button => button
-			.setButtonText('Browse')
-			.onClick(async () => {
-				// Use Electron dialog to pick folder
-				const { dialog } = require('electron').remote;
-				const result = await dialog.showOpenDialog({
-					properties: ['openDirectory']
-				});
-
-				if (!result.canceled && result.filePaths.length > 0) {
-					this.plugin.settings.destinationPath = result.filePaths[0];
+			.setDesc('Specify the directory where files will be copied (e.g., D:\\destination)')
+			.addText(text => text
+				.setPlaceholder('D:\\destination')
+				.setValue(this.plugin.settings.destinationPath)
+				.onChange(async (value) => {
+					this.plugin.settings.destinationPath = value;
 					await this.plugin.saveSettings();
-					this.display(); // Refresh to show new path
-				}
-			}));
+				}));
 
 		// File type filter
 		const filterSetting = new Setting(containerEl)
@@ -76,11 +62,11 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		filterSetting.addDropdown(dropdown => {
 			dropdown
 				.addOption('all', 'All files')
-				.addOption('.md', 'Markdown (.md)')
-				.addOption('.png', 'PNG images (.png)')
-				.addOption('.jpg', 'JPEG images (.jpg)')
-				.addOption('.pdf', 'PDF documents (.pdf)')
-				.addOption('.txt', 'Text files (.txt)')
+				.addOption('.md', 'Markdown')
+				.addOption('.png', 'Png')
+				.addOption('.jpg', 'Jpg')
+				.addOption('.pdf', 'Pdf')
+				.addOption('.txt', 'Text')
 				.setValue(this.plugin.settings.fileTypeFilter)
 				.onChange(async (value) => {
 					this.plugin.settings.fileTypeFilter = value;
@@ -91,10 +77,6 @@ export class FileSyncSettingTab extends PluginSettingTab {
 
 		// Batch selection and folder management buttons
 		const buttonContainer = containerEl.createDiv({ cls: 'file-sync-button-container' });
-		buttonContainer.style.marginBottom = '10px';
-		buttonContainer.style.display = 'flex';
-		buttonContainer.style.gap = '10px';
-		buttonContainer.style.flexWrap = 'wrap';
 
 		// Smart toggle button for Select All / Deselect All
 		const files = this.getFilteredFiles();
@@ -138,16 +120,18 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		const toggleFoldersBtn = buttonContainer.createEl('button', {
 			text: isCurrentlyCollapsed ? 'Expand' : 'Collapse'
 		});
-		toggleFoldersBtn.addEventListener('click', async () => {
-			if (isCurrentlyCollapsed) {
-				// Expand all
-				this.plugin.settings.collapsedFolders = [];
-			} else {
-				// Collapse all
-				this.plugin.settings.collapsedFolders = Array.from(allFolderPaths);
-			}
-			await this.plugin.saveSettings();
-			this.display();
+		toggleFoldersBtn.addEventListener('click', () => {
+			void (async () => {
+				if (isCurrentlyCollapsed) {
+					// Expand all
+					this.plugin.settings.collapsedFolders = [];
+				} else {
+					// Collapse all
+					this.plugin.settings.collapsedFolders = Array.from(allFolderPaths);
+				}
+				await this.plugin.saveSettings();
+				this.display();
+			})();
 		});
 
 		// File count display
@@ -157,23 +141,13 @@ export class FileSyncSettingTab extends PluginSettingTab {
 			? `Selected: ${selectedCount} / ${totalCount} files (unsaved changes)`
 			: `Selected: ${selectedCount} / ${totalCount} files`;
 
-		const statusEl = containerEl.createEl('p', {
+		containerEl.createEl('p', {
 			text: statusText,
-			cls: 'file-sync-count'
+			cls: this.hasUnsavedChanges ? 'file-sync-count unsaved' : 'file-sync-count'
 		});
-		if (this.hasUnsavedChanges) {
-			statusEl.style.color = 'var(--text-warning)';
-			statusEl.style.fontWeight = 'bold';
-		}
 
 		// File tree with checkboxes
 		this.fileListContainer = containerEl.createDiv({ cls: 'file-sync-file-list' });
-		this.fileListContainer.style.maxHeight = '400px';
-		this.fileListContainer.style.overflowY = 'auto';
-		this.fileListContainer.style.border = '1px solid var(--background-modifier-border)';
-		this.fileListContainer.style.padding = '10px';
-		this.fileListContainer.style.borderRadius = '4px';
-		this.fileListContainer.style.marginBottom = '10px';
 
 		if (files.length === 0) {
 			this.fileListContainer.createEl('p', {
@@ -191,26 +165,20 @@ export class FileSyncSettingTab extends PluginSettingTab {
 
 		// Save button at the bottom
 		const saveButtonContainer = containerEl.createDiv({ cls: 'file-sync-save-container' });
-		saveButtonContainer.style.display = 'flex';
-		saveButtonContainer.style.justifyContent = 'center';
-		saveButtonContainer.style.marginTop = '10px';
 
-		const saveBtn = saveButtonContainer.createEl('button', { text: 'Save' });
-		saveBtn.style.padding = '10px 20px';
-		saveBtn.style.fontSize = '14px';
+		const saveBtn = saveButtonContainer.createEl('button', { 
+			text: 'Save',
+			cls: this.hasUnsavedChanges ? 'unsaved' : ''
+		});
 
-		if (this.hasUnsavedChanges) {
-			saveBtn.style.backgroundColor = 'var(--interactive-accent)';
-			saveBtn.style.color = 'var(--text-on-accent)';
-			saveBtn.style.fontWeight = 'bold';
-		}
-
-		saveBtn.addEventListener('click', async () => {
-			this.plugin.settings.selectedFiles = [...this.tempSelectedFiles];
-			await this.plugin.saveSettings();
-			this.hasUnsavedChanges = false;
-			new Notice('File selection saved');
-			this.display();
+		saveBtn.addEventListener('click', () => {
+			void (async () => {
+				this.plugin.settings.selectedFiles = [...this.tempSelectedFiles];
+				await this.plugin.saveSettings();
+				this.hasUnsavedChanges = false;
+				new Notice('File selection saved');
+				this.display();
+			})();
 		});
 	}
 
@@ -283,22 +251,14 @@ export class FileSyncSettingTab extends PluginSettingTab {
 
 			// Folder header
 			const folderHeader = container.createEl('div', { cls: 'file-sync-folder-header' });
-			folderHeader.style.fontWeight = 'bold';
-			folderHeader.style.marginTop = '4px';
-			folderHeader.style.marginBottom = '4px';
-			folderHeader.style.color = 'var(--text-muted)';
-			folderHeader.style.cursor = 'pointer';
-			folderHeader.style.display = 'flex';
-			folderHeader.style.alignItems = 'center';
-			folderHeader.style.gap = '8px';
-			folderHeader.style.paddingLeft = `${depth * 20}px`; // Indentation based on depth
+			// Set dynamic indentation based on depth
+			folderHeader.style.paddingLeft = `${depth * 20}px`;
 
 			// Collapse/expand icon
-			const icon = folderHeader.createEl('span', {
+			folderHeader.createEl('span', {
 				text: isCollapsed ? '▶' : '▼',
 				cls: 'file-sync-collapse-icon'
 			});
-			icon.style.fontSize = '10px';
 
 			// Get all files in this folder and subfolders
 			const allFilesInFolder = this.getAllFilesInNode(childNode);
@@ -332,20 +292,22 @@ export class FileSyncSettingTab extends PluginSettingTab {
 			});
 
 			// Folder name
-			const folderName = folderHeader.createEl('span', { text: childNode.name });
+			folderHeader.createEl('span', { text: childNode.name });
 
 			// Toggle collapse on folder header click
-			folderHeader.addEventListener('click', async (e) => {
+			folderHeader.addEventListener('click', (e) => {
 				if (e.target !== folderCheckbox) {
-					if (isCollapsed) {
-						this.plugin.settings.collapsedFolders = this.plugin.settings.collapsedFolders.filter(
-							f => f !== childNode.path
-						);
-					} else {
-						this.plugin.settings.collapsedFolders.push(childNode.path);
-					}
-					await this.plugin.saveSettings();
-					this.display();
+					void (async () => {
+						if (isCollapsed) {
+							this.plugin.settings.collapsedFolders = this.plugin.settings.collapsedFolders.filter(
+								f => f !== childNode.path
+							);
+						} else {
+							this.plugin.settings.collapsedFolders.push(childNode.path);
+						}
+						await this.plugin.saveSettings();
+						this.display();
+					})();
 				}
 			});
 
@@ -373,14 +335,11 @@ export class FileSyncSettingTab extends PluginSettingTab {
 
 	renderFileItem(container: HTMLElement, file: TFile, depth: number): void {
 		const fileItem = container.createEl('div', { cls: 'file-sync-file-item' });
-		fileItem.style.display = 'flex';
-		fileItem.style.alignItems = 'center';
-		fileItem.style.padding = '2px 0';
+		// Set dynamic indentation based on depth
 		fileItem.style.paddingLeft = `${depth * 20 + 20}px`; // Extra indent for files
 
 		const checkbox = fileItem.createEl('input', { type: 'checkbox' });
 		checkbox.checked = this.tempSelectedFiles.includes(file.path);
-		checkbox.style.marginRight = '8px';
 		checkbox.addEventListener('change', () => {
 			if (checkbox.checked) {
 				if (!this.tempSelectedFiles.includes(file.path)) {
@@ -396,7 +355,6 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		});
 
 		const label = fileItem.createEl('label', { text: file.name });
-		label.style.cursor = 'pointer';
 		label.addEventListener('click', () => {
 			checkbox.click();
 		});

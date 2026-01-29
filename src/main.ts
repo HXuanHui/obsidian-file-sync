@@ -83,21 +83,23 @@ export default class FileSyncPlugin extends Plugin {
 					continue;
 				}
 
-				// Read file content
-				const content = await this.app.vault.readBinary(file);
+			// Read file content
+			const content = await this.app.vault.readBinary(file);
 
-				// Calculate destination path (maintain folder structure)
-				const relativePath = filePath;
-				const destFilePath = path.join(this.settings.destinationPath, relativePath);
+			// Calculate destination path (maintain folder structure)
+			const relativePath = filePath;
+			const destFilePath = path.join(this.settings.destinationPath, relativePath);
 
-				// Create destination directory if it doesn't exist
-				const destDir = path.dirname(destFilePath);
-				if (!fs.existsSync(destDir)) {
-					fs.mkdirSync(destDir, { recursive: true });
-				}
+			// Create destination directory if it doesn't exist
+			const destDir = path.dirname(destFilePath);
+			if (!fs.existsSync(destDir)) {
+				fs.mkdirSync(destDir, { recursive: true });
+			}
 
-				// Write file to destination
-				fs.writeFileSync(destFilePath, Buffer.from(content));
+			// Write file to destination
+			// Convert ArrayBuffer to Buffer for Node.js fs
+			const buffer = new Uint8Array(content);
+			fs.writeFileSync(destFilePath, buffer);
 				successCount++;
 			} catch (error) {
 				errorCount++;
