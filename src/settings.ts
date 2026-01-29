@@ -63,9 +63,9 @@ export class FileSyncSettingTab extends PluginSettingTab {
 			dropdown
 				.addOption('all', 'All files')
 				.addOption('.md', 'Markdown')
-				.addOption('.png', 'Png')
-				.addOption('.jpg', 'Jpg')
-				.addOption('.pdf', 'Pdf')
+				.addOption('.png', 'PNG images')
+				.addOption('.jpg', 'JPEG images')
+				.addOption('.pdf', 'PDF documents')
 				.addOption('.txt', 'Text')
 				.setValue(this.plugin.settings.fileTypeFilter)
 				.onChange(async (value) => {
