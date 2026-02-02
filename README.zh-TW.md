@@ -161,7 +161,7 @@ npm run lint
 
 ## 截圖
 
-![alt text](assets/interface.png)
+![alt text](assets/interface_v1.1.0.png)
 
 ## 更新日誌
 

@@ -159,7 +159,7 @@ If you encounter any issues or have suggestions, please create an Issue on GitHu
 
 ## Screenshots
 
-![alt text](assets/interface.png)
+![alt text](assets/interface_v1.1.0.png)
 
 ## Changelog
 

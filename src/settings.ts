@@ -61,7 +61,7 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		// Allow sync outside scope setting
 		new Setting(containerEl)
 			.setName('Allow syncing files outside monitored scope')
-			.setDesc('If enabled, the "Sync current file" command will work for any file, even if it is not selected in the list below.')
+			.setDesc('If enabled, the "sync current file" command will work for any file, even if it is not selected in the list below.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.allowSyncOutsideScope)
 				.onChange(async (value) => {

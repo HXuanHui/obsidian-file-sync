@@ -74,7 +74,7 @@ export default class FileSyncPlugin extends Plugin {
 		const isMonitored = this.settings.selectedFiles.includes(activeFile.path);
 
 		if (!this.settings.allowSyncOutsideScope && !isMonitored) {
-			new Notice('Current file is not in the monitored scope. Enable "Allow syncing files outside monitored scope" in settings to override.', 5000);
+			new Notice('Current file is not in the monitored scope. Enable "allow syncing files outside monitored scope" in settings to override.', 5000);
 			return;
 		}
 
