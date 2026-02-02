@@ -64,6 +64,12 @@ export default class FileSyncPlugin extends Plugin {
 			return;
 		}
 
+		// Check if destination exists
+		if (!fs.existsSync(this.settings.destinationPath)) {
+			new Notice('Destination path does not exist', 5000);
+			return;
+		}
+
 		// Check scope logic
 		const isMonitored = this.settings.selectedFiles.includes(activeFile.path);
 
@@ -124,7 +130,9 @@ export default class FileSyncPlugin extends Plugin {
 				const file = this.app.vault.getAbstractFileByPath(filePath);
 
 				if (!file || !(file instanceof TFile)) {
-					// File might have been deleted, skip silently or log warning
+					const errorMsg = `File not found: ${filePath}`;
+					errors.push(errorMsg);
+					errorCount++;
 					continue;
 				}
 
@@ -142,7 +150,9 @@ export default class FileSyncPlugin extends Plugin {
 
 				// Smart Sync Logic: Only sync if modified since last sync
 				if (stat.mtime > lastSyncTime) {
-					await this.performFileSync(file);
+					// Pass stat.mtime so we record the version we decided to sync, avoiding race where
+					// file is modified between this check and the stat inside performFileSync().
+					await this.performFileSync(file, stat.mtime);
 					successCount++;
 					hasUpdates = true;
 				} else {
@@ -185,7 +195,26 @@ export default class FileSyncPlugin extends Plugin {
 		}
 	}
 
-	async performFileSync(file: TFile) {
+	/**
+	 * Sync a single file to the destination.
+	 * @param file - The vault file to sync.
+	 * @param knownMtime - If provided (e.g. from syncFiles), use this as the recorded sync time to avoid race:
+	 *        we sync the version that had this mtime; recording a later stat would wrongly skip future syncs.
+	 *        If omitted (e.g. from syncCurrentFile), we stat once before reading and record that mtime.
+	 */
+	async performFileSync(file: TFile, knownMtime?: number) {
+		let mtimeToRecord: number;
+
+		if (knownMtime !== undefined) {
+			mtimeToRecord = knownMtime;
+		} else {
+			const stat = await this.app.vault.adapter.stat(file.path);
+			if (!stat) {
+				throw new Error(`Could not get stats for file: ${file.path}`);
+			}
+			mtimeToRecord = stat.mtime;
+		}
+
 		// Read file content
 		const content = await this.app.vault.readBinary(file);
 
@@ -204,11 +233,7 @@ export default class FileSyncPlugin extends Plugin {
 		const buffer = new Uint8Array(content);
 		fs.writeFileSync(destFilePath, buffer);
 
-		// Update last sync time using the CURRENT file stat
-		// Get fresh stat again to be precise about what version we just synced
-		const stat = await this.app.vault.adapter.stat(file.path);
-		if (stat) {
-			this.settings.lastSyncTimes[file.path] = stat.mtime;
-		}
+		// Record the mtime of the version we actually synced (no second stat to avoid race).
+		this.settings.lastSyncTimes[file.path] = mtimeToRecord;
 	}
 }
