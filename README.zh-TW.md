@@ -25,6 +25,9 @@
 - 保持結構：同步時維持原有的資料夾結構
 - 支援所有檔案類型：.md, .png, .jpg, .pdf, .txt, .docx, .xlsx 等
 - 錯誤記錄：同步錯誤會記錄到插件資料夾的 `sync-errors.log` 檔案
+- 智慧增量同步：僅同步自上次同步後有被修改的檔案
+- 同步當前檔案：指令可立即同步目前開啟的檔案
+- 彈性範圍控制：可選擇是否允許同步未在監控列表中的單一檔案
 
 ## 安裝方式
 
@@ -95,10 +98,21 @@ npm run build
 
 插件會：
 - 驗證目的地路徑是否存在
-- 複製已儲存選擇的檔案到目的地
+- 檢查檔案修改時間（智慧同步）
+- 僅複製自上次同步後有變更的檔案
 - 維持原有的資料夾結構
 - 顯示同步進度和結果通知
 - 如有錯誤，記錄到 `sync-errors.log` 檔案
+
+### 4. 同步當前檔案
+
+1. 在 Obsidian 開啟檔案
+2. 開啟指令面板 (Ctrl/Cmd + P)
+3. 輸入 `Sync current file` 並按 Enter
+4. 當前檔案將會被同步到目的地
+
+**注意：** 預設情況下，此指令僅適用於您的「Monitored Scope」（在設定中勾選的檔案）。
+若要允許同步任何檔案，請在插件設定中啟用 **「Allow syncing files outside monitored scope」**。
 
 ## 錯誤記錄
 
@@ -150,6 +164,12 @@ npm run lint
 ![alt text](assets/interface.png)
 
 ## 更新日誌
+
+### v1.1.0
+- **智慧同步**：新增增量同步支援。僅有自上次同步後修改過的檔案會被複製。
+- **新指令**：新增「Sync current file」指令，可立即同步當前檔案。
+- **範圍控制**：新增「Allow syncing files outside monitored scope」設定，控制 `Sync current file` 是否可同步範圍外檔案。
+- **效能優化**：使用直接檔案系統狀態檢查 (`adapter.stat`) 來捕捉外部編輯器的修改。
 
 ### v1.0.0
 - 初始版本發布

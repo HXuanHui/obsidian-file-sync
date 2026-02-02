@@ -4,15 +4,19 @@ import FileSyncPlugin from "./main";
 export interface FileSyncSettings {
 	destinationPath: string;
 	selectedFiles: string[];
+	lastSyncTimes: Record<string, number>;
 	fileTypeFilter: string;
 	collapsedFolders: string[];
+	allowSyncOutsideScope: boolean;
 }
 
 export const DEFAULT_SETTINGS: FileSyncSettings = {
 	destinationPath: '',
 	selectedFiles: [],
+	lastSyncTimes: {},
 	fileTypeFilter: 'all',
-	collapsedFolders: []
+	collapsedFolders: [],
+	allowSyncOutsideScope: false
 }
 
 export class FileSyncSettingTab extends PluginSettingTab {
@@ -37,7 +41,7 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		}
 
 		containerEl.empty();
-		
+
 		new Setting(containerEl)
 			.setName('Synchronization')
 			.setHeading();
@@ -51,6 +55,17 @@ export class FileSyncSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.destinationPath)
 				.onChange(async (value) => {
 					this.plugin.settings.destinationPath = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Allow sync outside scope setting
+		new Setting(containerEl)
+			.setName('Allow syncing files outside monitored scope')
+			.setDesc('If enabled, the "Sync current file" command will work for any file, even if it is not selected in the list below.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.allowSyncOutsideScope)
+				.onChange(async (value) => {
+					this.plugin.settings.allowSyncOutsideScope = value;
 					await this.plugin.saveSettings();
 				}));
 
@@ -166,7 +181,7 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		// Save button at the bottom
 		const saveButtonContainer = containerEl.createDiv({ cls: 'file-sync-save-container' });
 
-		const saveBtn = saveButtonContainer.createEl('button', { 
+		const saveBtn = saveButtonContainer.createEl('button', {
 			text: 'Save',
 			cls: this.hasUnsavedChanges ? 'unsaved' : ''
 		});

@@ -22,6 +22,9 @@ An [Obsidian](https://obsidian.md/) plugin for synchronizing selected vault file
 - **Scroll position preservation**: Automatically restores scroll position when re-rendering, won't jump back to top
 - **Structure preservation**: Maintains original folder structure during sync
 - **All file types supported**: .md, .png, .jpg, .pdf, .txt, .docx, .xlsx, etc.
+- **Smart incremental sync**: Only syncs files that have been modified since the last sync
+- **Sync current file**: Command to instantly sync the currently active file
+- **Flexible scope control**: Option to allow syncing individual files even if not in the monitored list
 - **Error logging**: Sync errors are logged to `sync-errors.log` file in the plugin folder
 
 ## Installation
@@ -93,10 +96,21 @@ Click the Sync icon in the left sidebar to execute the sync.
 
 The plugin will:
 - Verify that the destination path exists
-- Copy the saved selected files to the destination
+- Check modification times of selected files (Smart Sync)
+- Copy only files that have changed since the last sync
 - Maintain the original folder structure
 - Display sync progress and result notifications
 - Log any errors to the `sync-errors.log` file
+
+### 4. Sync Current File
+
+1. Open a file in Obsidian
+2. Run the command palette (Ctrl/Cmd + P)
+3. Type `Sync current file` and press Enter
+4. The current file will be synced to the destination
+
+**Note:** By default, this command only works for files that are in your "Monitored Scope" (selected in settings).
+To allow syncing any file, enable **"Allow syncing files outside monitored scope"** in the plugin settings.
 
 ## Error Logging
 
@@ -148,6 +162,12 @@ If you encounter any issues or have suggestions, please create an Issue on GitHu
 ![alt text](assets/interface.png)
 
 ## Changelog
+
+### v1.1.0
+- **Smart Sync**: Added incremental sync support. Only files modified since the last sync will be copied.
+- **New Command**: Added "Sync current file" command to sync the active file immediately.
+- **Scope Control**: Added setting "Allow syncing files outside monitored scope" to control `Sync current file` behavior.
+- **Performance**: Optimized file modification checks using direct file system stats (`adapter.stat`) to catch external edits.
 
 ### v1.0.0
 - Initial release
