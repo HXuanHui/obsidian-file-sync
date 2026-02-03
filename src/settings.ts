@@ -58,6 +58,33 @@ export class FileSyncSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		// Add Browse button
+		new Setting(containerEl)
+			.addButton(button => button
+				.setButtonText('Browse')
+				.setTooltip('Select destination folder')
+				.onClick(async () => {
+					const dialog = await this.getFolderDialog();
+					if (!dialog) {
+						new Notice('Folder picker is not available. Please enter the path manually.');
+						return;
+					}
+
+					const result = await dialog.showOpenDialog({
+						properties: ['openDirectory']
+					});
+
+
+					if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+						const selectedPath = result.filePaths[0];
+						if (selectedPath) {
+							this.plugin.settings.destinationPath = selectedPath;
+							await this.plugin.saveSettings();
+							this.display();
+						}
+					}
+				}));
+
 		// Allow sync outside scope setting
 		new Setting(containerEl)
 			.setName('Allow syncing files outside monitored scope')
@@ -195,6 +222,25 @@ export class FileSyncSettingTab extends PluginSettingTab {
 				this.display();
 			})();
 		});
+	}
+
+	/**
+	 * Returns Electron's dialog for folder selection when running on desktop (Obsidian is Electron-based).
+	 * Returns null if not available (e.g. non-Electron environment).
+	 */
+	private async getFolderDialog(): Promise<{
+		showOpenDialog: (options: { properties: string[] }) => Promise<{ canceled: boolean; filePaths: string[] }>;
+	} | null> {
+		try {
+			// @ts-ignore
+			const electron = window.require('electron');
+			const remote = electron.remote;
+			const dialog = remote?.dialog ?? electron.dialog;
+			return dialog;
+		} catch (e) {
+			console.log('Not running in Electron or failed to load dialog', e);
+			return null;
+		}
 	}
 
 	getFilteredFiles(): TFile[] {
