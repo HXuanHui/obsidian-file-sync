@@ -232,13 +232,32 @@ export class FileSyncSettingTab extends PluginSettingTab {
 		showOpenDialog: (options: { properties: string[] }) => Promise<{ canceled: boolean; filePaths: string[] }>;
 	} | null> {
 		try {
-			// @ts-ignore
-			const electron = window.require('electron');
+			// Define minimal types for Electron interaction
+			interface ElectronDialog {
+				showOpenDialog: (options: { properties: string[] }) => Promise<{ canceled: boolean; filePaths: string[] }>;
+			}
+			interface ElectronRemote {
+				dialog: ElectronDialog;
+			}
+			interface ElectronModule {
+				remote?: ElectronRemote;
+				dialog?: ElectronDialog;
+			}
+			interface WindowWithRequire extends Window {
+				require?: (module: string) => ElectronModule;
+			}
+
+			const win = window as WindowWithRequire;
+			if (typeof win.require !== 'function') return null;
+
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+			const electron = win.require('electron');
 			const remote = electron.remote;
 			const dialog = remote?.dialog ?? electron.dialog;
-			return dialog;
+
+			return dialog ?? null;
 		} catch (e) {
-			console.log('Not running in Electron or failed to load dialog', e);
+			console.error('Not running in Electron or failed to load dialog', e);
 			return null;
 		}
 	}
